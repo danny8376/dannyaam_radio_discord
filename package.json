@@ -8,9 +8,8 @@
   },
   "homepage": "http://radio.saru.moe/",
   "dependencies": {
-    "discord.js": "11.2.0",
-    "node-opus": "*",
-    "ogg": "file:/home/danny/NodeProj/node-ogg",
-    "string-argv": "*"
+    "discord.js": "~11.2.0",
+    "ogg": "git+https://github.com/danny8376/node-ogg#stream-fix",
+    "string-argv": "~0.0.2"
   }
 }
