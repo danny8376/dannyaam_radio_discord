@@ -1,0 +1,6 @@
+{
+  "invite": "https://discordapp.com/oauth2/authorize?client_id=<appid>&permissions=3148800&scope=bot",
+  "token": "<apptoken>",
+  "uri": "http://radio.radio/radio",
+  "prefix": "radio!"
+}
