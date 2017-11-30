@@ -66,14 +66,15 @@ var commands = {
     }
 };
 
+function updateStatus() {
+    bot.user.setGame(config.prefix + "help | " + bot.guilds.array().length + " servers");
+}
+
 bot.on("ready", function () {
     console.log("Logged in " + bot.guilds.array().length + " servers");
-    //bot.user.setGame(config.prefix + "help | " + bot.guilds.array().length + " servers"); 
+    updateStatus();
+    setInterval(updateStatus, 60000);
 });
-
-setInterval(function() {
-    //bot.user.setGame(config.prefix + "help | " + bot.guilds.array().length + " servers");
-}, 60000);
 
 bot.on('message', function (msg) {
     if(msg.content.indexOf(config.prefix) === 0) {
