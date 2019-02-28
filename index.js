@@ -2,7 +2,7 @@ const Discord = require('discord.js');
 const http = require('http');
 const splitArgs = require('string-argv');
 const ogg = require('ogg');
-const AudioPlayer = require('./lib/discord/player/AudioPlayer');
+const { Readable } = require('stream')
 const config = require('./config.json');
 
 var bot = new Discord.Client();
@@ -36,12 +36,24 @@ var commands = {
         if (!channel) return msg.channel.send(':warning:  |  **You are not on a voice channel.**');
         msg.channel.send(":musical_note:  |  **Playing**");
         msg.member.voiceChannel.join().then(connection => {
-            connection.player.destroy();
-            connection.player = new AudioPlayer(connection);
             http.get(config.uri, (res) => {
+                connection.on('disconnect', () => {
+                    res.destroy();
+                });
                 decoder = new ogg.Decoder();
-                decoder.on('stream', function (stream) {
-                    connection.playStream(stream);
+                decoder.on('stream', (stream) => {
+                    const dummy = new Readable();
+                    dummy._read = (size) => {};
+                    const dispatcher = connection.playOpusStream(dummy);
+                    const data = dispatcher.streamingData;
+                    stream.on('data', packet => {
+                        // ignore start/end packet to avoid stuck with discord streaming
+                        if (packet.e_o_s === 0 && packet.b_o_s === 0) {
+                            dispatcher.started();
+                            dispatcher.stepStreamingData();
+                            dispatcher.sendBuffer(null, data.sequence, data.timestamp, packet.packet);
+                        }
+                    });
                 });
                 res.pipe(decoder);
             })
