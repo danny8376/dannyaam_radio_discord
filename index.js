@@ -35,6 +35,7 @@ var commands = {
         const channel = msg.member.voiceChannel;
         if (!channel) return msg.channel.send(':warning:  |  **You are not on a voice channel.**');
         msg.channel.send(":musical_note:  |  **Playing**");
+        msg.member.voiceChannel.leave();
         msg.member.voiceChannel.join().then(connection => {
             const id = upstream.on(connection);
             connection.on('disconnect', () => {
