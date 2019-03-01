@@ -1,6 +1,7 @@
 const Discord = require('discord.js');
 const Upstream = require('./lib/upstream');
 const splitArgs = require('string-argv');
+const http = require('http');
 const config = require('./config.json');
 
 var bot = new Discord.Client();
@@ -17,6 +18,7 @@ var commands = {
             config.prefix + "join Join to your channel",
             config.prefix + "leave Leaves the voice channel",
             config.prefix + "play Play the radio",
+            config.prefix + "now Show current playing song info",
             config.prefix + "invite Generate an invitation link you can use to invite the bot to your server",
             "```",
         ]);
@@ -44,6 +46,11 @@ var commands = {
         })
         .catch(console.error);
     },
+    "now": function (msg, args) {
+        playing((meta) => {
+            msg.channel.send(":musical_note:  |  Playing - " + meta.title + " ( " + meta.album + " ) - " + meta.artist + " | " + meta.playback_time_seconds + "/" + meta.length_seconds + "s");
+        });
+    },
     "leave": function (msg, args) {
         const voiceChannel = msg.member.voiceChannel;
         if (voiceChannel) {
@@ -64,6 +71,18 @@ var commands = {
 
 function updateStatus() {
     bot.user.setGame(config.prefix + "help | " + bot.guilds.array().length + " servers");
+}
+
+function playing(cb) {
+    http.get("http://live.saru.moe/music/songctl2/data/playing.php", (res) => {
+        let json = "";
+        res.on('data', (chunk) => {
+            json += chunk;
+        });
+        res.on('end', () => {
+            cb(JSON.parse(json));
+        });
+    });
 }
 
 bot.on("ready", function () {
