@@ -117,8 +117,8 @@ bot.on('message', function (msg) {
         if(dat !== undefined) {
             dat[1](msg, args);
         } else {
-            cmd = cmd.replace('`', '') || "none";
-            msg.channel.send(":warning:  |  **The command** `" + cmd + "` **don't exist, for more help use** `" + config.prefix + "help`");
+            let str = cmd.replace('`', '') || "none";
+            msg.channel.send(":warning:  |  **The command** `" + str + "` **don't exist, for more help use** `" + config.prefix + "help`");
         }
     }
 });
