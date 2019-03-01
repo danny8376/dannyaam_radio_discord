@@ -4,12 +4,12 @@ const splitArgs = require('string-argv');
 const http = require('http');
 const config = require('./config.json');
 
-var bot = new Discord.Client();
+const bot = new Discord.Client();
 console.log("Starting bot...");
 
-var upstream = null;
+let upstream = null;
 
-var commands = {
+const commands = {
     "help": function (msg, args) {
         msg.channel.send([
             "Commands",
@@ -94,9 +94,9 @@ bot.on("ready", function () {
 
 bot.on('message', function (msg) {
     if(msg.content.indexOf(config.prefix) === 0) {
-        var args = splitArgs(msg);
-        var cmd = args.shift();
-        var cmdFn = commands[cmd.substring(config.prefix.length)];
+        const args = splitArgs(msg);
+        const cmd = args.shift();
+        const cmdFn = commands[cmd.substring(config.prefix.length)];
         if(cmdFn !== undefined) {
             cmdFn(msg, args);
         } else {
