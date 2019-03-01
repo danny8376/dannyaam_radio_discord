@@ -87,7 +87,7 @@ const commands = {
 };
 
 function updateStatus() {
-    bot.user.setGame(config.prefix + "help | " + bot.guilds.array().length + " servers");
+    bot.user.setActivity("Self | " + config.prefix + "help | " + bot.guilds.array().length + " servers", { type: 'LISTENING' });
 }
 
 function playing(cb) {
