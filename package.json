@@ -10,7 +10,7 @@
   "dependencies": {
     "discord.js": "^11.4.2",
     "libsodium-wrappers": "^0.7.4",
-    "ogg": "git+https://github.com/danny8376/node-ogg.git#stream-fix",
+    "ogg": "git+https://github.com/matijagaspar/node-ogg#node-12",
     "string-argv": "^0.1.1"
   }
 }
