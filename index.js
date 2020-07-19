@@ -8,6 +8,24 @@ const bot = new Discord.Client();
 console.log("Starting bot...");
 
 let upstream = null;
+const inviter = {
+    c2u: {}, // channel id => user id
+    botJoin(cid, uid) {
+        this.c2u[cid] = uid;
+    },
+    botLeave(cid) {
+        delete this.c2u[cid];
+    },
+    userJoin(cid, uid) {
+    },
+    userLeave(cid, uid) {
+    },
+    check(cid, uid) {
+    },
+    get(cid) {
+        return this.c2u[cid];
+    }
+};
 
 const commands = {
     help: [
@@ -19,6 +37,7 @@ const commands = {
             ];
             const padding = 10; // config
             for (let cmd in commands) {
+                if (typeof commands[cmd] === "function") continue;
                 text.push(config.prefix + cmd + " ".repeat(padding - cmd.length) + " " + commands[cmd][0]);
             }
             text.push("```");
@@ -28,28 +47,27 @@ const commands = {
     join: [
         "Join to your current channel",
         (msg, args) => {
-            const channel = msg.member.voiceChannel;
-            if (!channel) return msg.channel.send(':warning:  |  **You are not on a voice channel.**');
-            if(!msg.member.voiceChannel.joinable) {
-                msg.channel.send(":warning:  |  **Not permit to play music in this channel.**");
-                return;
-            }
-            msg.member.voiceChannel.join();
-            msg.channel.send(":loudspeaker:  |  **Successfully joined!**");
+            commands.joinChannel(msg);
         }
     ],
     play: [
         "Play the radio",
-        (msg, args) => {
-            const channel = msg.member.voiceChannel;
-            if (!channel) return msg.channel.send(':warning:  |  **You are not on a voice channel.**');
-            msg.channel.send(":musical_note:  |  **Playing**");
-            msg.member.voiceChannel.leave();
-            msg.member.voiceChannel.join().then(connection => {
+        async (msg, args) => {
+            const voiceChannel = msg.member.voiceChannel;
+            if (!commands.checkAlreadyInChannel(voiceChannel)) {
+                try {
+                    await commands.joinChannel(msg);
+                } catch {
+                    return false;
+                }
+            }
+            voiceChannel.join().then(connection => {
                 const id = upstream.on(connection);
                 connection.on('disconnect', () => {
                     upstream.off(id);
                 });
+                msg.channel.send(":musical_note:  |  **Playing**");
+                inviter.botJoin(voiceChannel.id, msg.member.id);
             })
             .catch(console.error);
         }
@@ -67,12 +85,18 @@ const commands = {
         (msg, args) => {
             const voiceChannel = msg.member.voiceChannel;
             if (voiceChannel) {
-                if (msg.member.hasPermission("MANAGE_GUILD") == false) {
-                    msg.channel.send(":warning:  |  **You do not have sufficient permissions.**");
-                    return
+                const inviterId = inviter.get(voiceChannel.id);
+                if (inviterId) {
+                    if (voiceChannel.members.some(m => m.id === inviterId)) { // inviter in channel
+                        if (!msg.member.hasPermission("MANAGE_GUILD") && msg.member.id !== inviterId) { // ADMIN is able to force leave
+                            msg.channel.send(":warning:  |  **You do not have sufficient permissions.**");
+                            return false;
+                        }
+                    }
                 }
                 msg.channel.send(":loudspeaker:  |  **Successfully left!**");
-                msg.member.voiceChannel.leave();
+                voiceChannel.leave();
+                inviter.botLeave(voiceChannel.id);
             } else {
                 msg.channel.send(":warning:  |  **Not currently in a voice channel.**");
             }
@@ -83,7 +107,43 @@ const commands = {
         (msg, args) => {
             msg.channel.send(":tickets:  |  **Invite link:** `" + config.invite + "`");
         }
-    ]
+    ],
+    joinChannel(msg) {
+        return new Promise((resolve, reject) => {
+            const voiceChannel = msg.member.voiceChannel;
+            if (!voiceChannel) {
+                msg.channel.send(":warning:  |  **You are not on a voice channel.**");
+                return reject();
+            }
+            if (commands.checkAlreadyInChannel(voiceChannel)) {
+                msg.channel.send(":warning:  |  **I'm lready in this channel.**");
+                return reject();
+            }
+            if (commands.checkAlreadyInGuild(voiceChannel)) {
+                msg.channel.send(":warning:  |  **I'm lready in another channel in this server. Leave me first.**");
+                return reject();
+            }
+            if(!voiceChannel.joinable) {
+                msg.channel.send(":warning:  |  **Not permit to play music in this channel.**");
+                return reject();
+            }
+            voiceChannel.join().then(connection => {
+                msg.channel.send(":loudspeaker:  |  **Successfully joined!**");
+                inviter.botJoin(voiceChannel.id, msg.member.id);
+                resolve();
+            })
+            .catch(err => {
+                console.error(err);
+                reject();
+            });
+        });
+    },
+    checkAlreadyInGuild(channel) {
+        return bot.voiceConnections.some(vc => vc.channel.guild.id === channel.guild.id);
+    },
+    checkAlreadyInChannel(channel) {
+        return bot.voiceConnections.some(vc => vc.channel.id === channel.id);
+    }
 };
 
 function updateStatus() {
